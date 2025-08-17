@@ -31,11 +31,21 @@ document.addEventListener('DOMContentLoaded', () => {
         themeToggle.checked = false;
         applyTheme('light');
     }
+    
+    // --- UTILITY ---
+    function getTimeString() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        return `${hours}${minutes}${seconds}`;
+    }
 
     // --- ORIGINAL APP LOGIC ---
     const fileInput = document.getElementById('file-input');
     const linesPerPromptInput = document.getElementById('lines-per-prompt');
     const wrapperTemplateInput = document.getElementById('wrapper-template');
+    const filenameSuffixInput = document.getElementById('filename-suffix');
     const generateButton = document.getElementById('generate-button');
     const promptList = document.getElementById('prompt-list');
     const automateAllButton = document.getElementById('automate-all-button');
@@ -108,24 +118,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     automateAllButton.addEventListener('click', () => {
-        const allPromptButtons = promptList.querySelectorAll('.prompt-item:not(.processed) button[data-prompt]');
-        const allPrompts = Array.from(allPromptButtons).map(button => button.dataset.prompt);
-        
-        if (allPrompts.length > 0) {
-             chrome.runtime.sendMessage({
+        const allPromptItems = promptList.querySelectorAll('.prompt-item:not(.processed)');
+        const allPrompts = Array.from(allPromptItems).map(item => item.querySelector('button[data-prompt]').dataset.prompt);
+
+        if (allPrompts.length === 0) {
+            alert('No remaining prompts to automate!');
+            return;
+        }
+
+        const filenameSuffix = filenameSuffixInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '') || '';
+        const timeString = getTimeString();
+        const filenameQueue = [];
+
+        allPromptItems.forEach(item => {
+            const h3 = item.querySelector('h3');
+            const promptNumber = h3.textContent.match(/\d+/)[0];
+
+            let filename = `Prompt_${promptNumber}`;
+            if (filenameSuffix) {
+                filename += `_${filenameSuffix}`;
+            }
+            filename += `_${timeString}.txt`;
+            filenameQueue.push(filename);
+        });
+
+        chrome.storage.local.set({ filenameQueue: filenameQueue }, () => {
+            console.log('Filename queue saved to storage:', filenameQueue);
+            chrome.runtime.sendMessage({
                 action: 'startBatchAutomation',
                 prompts: allPrompts
             });
-            // Mark all items as processed and update their UI
-            allPromptButtons.forEach(button => {
-                button.closest('.prompt-item').classList.add('processed');
+            allPromptItems.forEach(item => {
+                const button = item.querySelector('button');
+                item.classList.add('processed');
                 button.textContent = 'Launched ✓';
                 button.disabled = true;
             });
             window.close();
-        } else {
-            alert('No remaining prompts to automate!');
-        }
+        });
     });
 
     promptList.addEventListener('click', (event) => {
@@ -135,14 +165,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = button.closest('.prompt-item');
             if (item && !item.classList.contains('processed')) {
                 const promptText = button.dataset.prompt;
-                chrome.runtime.sendMessage({
-                    action: 'startAutomation',
-                    prompt: promptText
-                });
 
-                item.classList.add('processed');
-                button.textContent = 'Launched ✓';
-                button.disabled = true;
+                const filenameSuffix = filenameSuffixInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '') || '';
+                const timeString = getTimeString();
+                const h3 = item.querySelector('h3');
+                const promptNumber = h3.textContent.match(/\d+/)[0];
+                
+                let filename = `Prompt_${promptNumber}`;
+                if (filenameSuffix) {
+                    filename += `_${filenameSuffix}`;
+                }
+                filename += `_${timeString}.txt`;
+                
+                chrome.storage.local.set({ filenameQueue: [filename] }, () => {
+                    chrome.runtime.sendMessage({
+                        action: 'startAutomation',
+                        prompt: promptText
+                    });
+
+                    item.classList.add('processed');
+                    button.textContent = 'Launched ✓';
+                    button.disabled = true;
+                });
             }
         }
     });

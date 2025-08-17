@@ -1,5 +1,39 @@
 // This script is injected via the manifest to add the download button.
 
+// --- 0. HELPERS ---
+function getTimeString() {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    return `${hours}${minutes}${seconds}`;
+}
+
+// Helper function to contain the actual download logic
+function performDownload(text, filename) {
+    const lines = text.split('\n').filter(line => line.trim());
+    if (lines.length === 0) {
+        // Use alert for consistency with other functions
+        alert("The turn has no text content to save.");
+        return;
+    }
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    console.log(`Saved as: ${filename}`);
+}
+
+
 // --- 1. CORE FUNCTION: The download logic ---
 function downloadLastTurn() {
     const lastTurn = [...document.querySelectorAll('[id^="turn-"]')].pop();
@@ -11,35 +45,143 @@ function downloadLastTurn() {
     const textChunk = lastTurn.querySelector('ms-text-chunk');
     if (textChunk) {
         const text = textChunk.innerText;
-        const lines = text.split('\n').filter(line => line.trim());
-
-        if (lines.length === 0) {
-            alert("Last turn has no text content to save.");
-            return;
-        }
-
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `turn-chunk-${timestamp}.txt`;
-
-        const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        console.log(`Saved as: ${filename}`);
+        performDownload(text, filename);
     } else {
         alert("Could not find a text chunk in the last turn.");
     }
 }
 
-// --- 2. BUTTON CREATION ---
+function downloadThirdTurn() {
+    const turns = document.querySelectorAll('[id^="turn-"]');
+    
+    if (turns.length < 3) {
+        alert("Less than 3 turns found on the page.");
+        return;
+    }
+    
+    const thirdTurn = turns[2]; // Index 2 for the 3rd turn
+    const textChunk = thirdTurn.querySelector('ms-text-chunk');
+
+    if (!textChunk) {
+        alert("Could not find a text chunk in the third turn.");
+        return;
+    }
+
+    const text = textChunk.innerText;
+
+    // Get filename from queue or generate fallback
+    chrome.storage.local.get('filenameQueue', (data) => {
+        let filename;
+        const queue = data.filenameQueue;
+
+        if (queue && queue.length > 0) {
+            filename = queue.shift(); // Get the first filename
+            // Save the updated (shorter) queue back to storage
+            chrome.storage.local.set({ filenameQueue: queue }, () => {
+                console.log(`Using filename from queue: ${filename}. Queue size now ${queue.length}.`);
+                performDownload(text, filename);
+            });
+        } else {
+            // Fallback for manual navigation or if queue is empty
+            const timeString = getTimeString();
+            filename = `Prompt_ManualDownload_${timeString}.txt`;
+            console.log(`Filename queue empty or not found. Using fallback name: ${filename}`);
+            performDownload(text, filename);
+        }
+    });
+}
+
+// --- 2. AUTO-DOWNLOAD MONITORING LOGIC ---
+let isMonitoring = false;
+let monitoringInterval = null;
+
+function startAutoDownloadMonitoring() {
+    if (isMonitoring) return;
+    
+    isMonitoring = true;
+    console.log("Starting auto-download monitoring...");
+    
+    // Check for 3+ turns every 3 seconds
+    const turnCheckInterval = setInterval(() => {
+        const turns = document.querySelectorAll('[id^="turn-"]');
+        console.log(`Current turns count: ${turns.length}`);
+        
+        if (turns.length >= 3) {
+            clearInterval(turnCheckInterval);
+            console.log("Found 3 turns, starting 3rd turn content stability monitoring...");
+            startContentStabilityCheck();
+        }
+    }, 5000);
+}
+
+function startContentStabilityCheck() {
+    let checkCount = 0;
+    let lastContent = '';
+    const maxChecks = 5;
+    
+    const contentCheckInterval = setInterval(() => {
+        const turns = document.querySelectorAll('[id^="turn-"]');
+        
+        // Check if we still have at least 3 turns
+        if (turns.length < 3) {
+            clearInterval(contentCheckInterval);
+            isMonitoring = false;
+            return;
+        }
+        
+        // Get the 3rd turn (index 2)
+        const thirdTurn = turns[2];
+        
+        if (!thirdTurn) {
+            clearInterval(contentCheckInterval);
+            isMonitoring = false;
+            return;
+        }
+        
+        const textChunk = thirdTurn.querySelector('ms-text-chunk');
+        if (!textChunk) {
+            clearInterval(contentCheckInterval);
+            isMonitoring = false;
+            return;
+        }
+        
+        const currentContent = textChunk.innerText;
+        checkCount++;
+        
+        console.log(`Content stability check ${checkCount}/${maxChecks} (monitoring 3rd turn)`);
+        console.log(`Content length: ${currentContent.length}`);
+        
+        if (checkCount === 1) {
+            lastContent = currentContent;
+        } else if (currentContent === lastContent) {
+            console.log(`Content stable for check ${checkCount}`);
+            
+            if (checkCount >= maxChecks) {
+                console.log("Content stable for 5 checks, auto-downloading 3rd turn...");
+                clearInterval(contentCheckInterval);
+                isMonitoring = false;
+                downloadThirdTurn();
+                return;
+            }
+        } else {
+            // Content changed, reset the check
+            console.log("Content changed, resetting stability check...");
+            lastContent = currentContent;
+            checkCount = 1;
+        }
+        
+        // Safety check to prevent infinite monitoring
+        if (checkCount > 20) {
+            console.log("Max checks exceeded, stopping monitoring");
+            clearInterval(contentCheckInterval);
+            isMonitoring = false;
+        }
+    }, 3000); // Check every 3 seconds
+}
+
+// --- 3. BUTTON CREATION ---
 const button = document.createElement('button');
 button.id = 'download-last-turn-btn';
 button.setAttribute('data-tooltip', 'Download Last Turn');
@@ -54,7 +196,7 @@ button.innerHTML = `
 
 document.body.appendChild(button);
 
-// --- 3. DRAG AND DROP & POSITION SAVING LOGIC ---
+// --- 4. DRAG AND DROP & POSITION SAVING LOGIC ---
 let isDragging = false;
 let hasDragged = false;
 let offsetX, offsetY;
@@ -124,3 +266,31 @@ function onMouseUp() {
 }
 
 loadPosition();
+
+// --- 5. START AUTO-DOWNLOAD MONITORING ---
+// Start monitoring when the script loads
+startAutoDownloadMonitoring();
+
+// Also start monitoring when new content is added to the page
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length > 0) {
+            // Check if new turns were added
+            const newTurns = Array.from(mutation.addedNodes).some(node => 
+                node.nodeType === Node.ELEMENT_NODE && 
+                (node.id && node.id.startsWith('turn-') || 
+                 node.querySelector && node.querySelector('[id^="turn-"]'))
+            );
+            
+            if (newTurns && !isMonitoring) {
+                console.log("New turns detected, restarting monitoring...");
+                startAutoDownloadMonitoring();
+            }
+        }
+    });
+});
+
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
