@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "AI Studio Last Turn Downloader",
+  "version": "1.0",
+  "description": "Adds a draggable button to download the last text chunk from Google's AI Studio.",
+  "permissions": [
+    "storage"
+  ],
+  "icons": {
+    "128": "icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://aistudio.google.com/*"],
+      "css": ["style.css"],
+      "js": ["content.js"]
+    }
+  ]
+}
