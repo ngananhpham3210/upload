@@ -1,5 +1,3 @@
-// This script is injected via the manifest to add the download button.
-
 // --- 0. HELPERS ---
 function getTimeString() {
     const now = new Date();
@@ -95,21 +93,37 @@ function downloadThirdTurn() {
 
 // --- 2. AUTO-DOWNLOAD MONITORING LOGIC ---
 let isMonitoring = false;
-let monitoringInterval = null;
+let isAutoDownloadEnabled = false;
+let turnCheckIntervalId = null;
+let contentCheckIntervalId = null;
+
+function stopAutoDownloadMonitoring() {
+    console.log("Stopping all auto-download monitoring tasks.");
+    if (turnCheckIntervalId) {
+        clearInterval(turnCheckIntervalId);
+        turnCheckIntervalId = null;
+    }
+    if (contentCheckIntervalId) {
+        clearInterval(contentCheckIntervalId);
+        contentCheckIntervalId = null;
+    }
+    isMonitoring = false;
+}
 
 function startAutoDownloadMonitoring() {
-    if (isMonitoring) return;
+    if (!isAutoDownloadEnabled || isMonitoring) return;
     
     isMonitoring = true;
     console.log("Starting auto-download monitoring...");
     
-    // Check for 3+ turns every 3 seconds
-    const turnCheckInterval = setInterval(() => {
+    // Check for 3+ turns every 5 seconds
+    turnCheckIntervalId = setInterval(() => {
         const turns = document.querySelectorAll('[id^="turn-"]');
         console.log(`Current turns count: ${turns.length}`);
         
         if (turns.length >= 3) {
-            clearInterval(turnCheckInterval);
+            clearInterval(turnCheckIntervalId);
+            turnCheckIntervalId = null;
             console.log("Found 3 turns, starting 3rd turn content stability monitoring...");
             startContentStabilityCheck();
         }
@@ -120,30 +134,32 @@ function startContentStabilityCheck() {
     let checkCount = 0;
     let lastContent = '';
     const maxChecks = 5;
+
+    const stopContentCheck = () => {
+        if (contentCheckIntervalId) {
+            clearInterval(contentCheckIntervalId);
+            contentCheckIntervalId = null;
+        }
+        isMonitoring = false;
+    };
     
-    const contentCheckInterval = setInterval(() => {
+    contentCheckIntervalId = setInterval(() => {
         const turns = document.querySelectorAll('[id^="turn-"]');
         
-        // Check if we still have at least 3 turns
         if (turns.length < 3) {
-            clearInterval(contentCheckInterval);
-            isMonitoring = false;
+            stopContentCheck();
             return;
         }
         
-        // Get the 3rd turn (index 2)
         const thirdTurn = turns[2];
-        
         if (!thirdTurn) {
-            clearInterval(contentCheckInterval);
-            isMonitoring = false;
+            stopContentCheck();
             return;
         }
         
         const textChunk = thirdTurn.querySelector('ms-text-chunk');
         if (!textChunk) {
-            clearInterval(contentCheckInterval);
-            isMonitoring = false;
+            stopContentCheck();
             return;
         }
         
@@ -160,32 +176,30 @@ function startContentStabilityCheck() {
             
             if (checkCount >= maxChecks) {
                 console.log("Content stable for 5 checks, auto-downloading 3rd turn...");
-                clearInterval(contentCheckInterval);
-                isMonitoring = false;
+                stopContentCheck();
                 downloadThirdTurn();
                 return;
             }
         } else {
-            // Content changed, reset the check
             console.log("Content changed, resetting stability check...");
             lastContent = currentContent;
             checkCount = 1;
         }
         
-        // Safety check to prevent infinite monitoring
         if (checkCount > 20) {
             console.log("Max checks exceeded, stopping monitoring");
-            clearInterval(contentCheckInterval);
-            isMonitoring = false;
+            stopContentCheck();
         }
-    }, 3000); // Check every 3 seconds
+    }, 3000);
 }
 
-// --- 3. BUTTON CREATION ---
+// --- 3. UI CREATION ---
+const container = document.createElement('div');
+container.id = 'download-controls-container';
+
 const button = document.createElement('button');
 button.id = 'download-last-turn-btn';
 button.setAttribute('data-tooltip', 'Download Last Turn');
-
 button.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -194,7 +208,21 @@ button.innerHTML = `
     </svg>
 `;
 
-document.body.appendChild(button);
+const checkboxLabel = document.createElement('label');
+checkboxLabel.className = 'auto-download-label';
+checkboxLabel.htmlFor = 'auto-download-checkbox';
+checkboxLabel.title = 'Enable/Disable Auto-Download'; // More descriptive tooltip
+
+const checkbox = document.createElement('input');
+checkbox.type = 'checkbox';
+checkbox.id = 'auto-download-checkbox';
+
+// The text span is no longer needed
+checkboxLabel.appendChild(checkbox);
+
+container.appendChild(button);
+container.appendChild(checkboxLabel);
+document.body.appendChild(container);
 
 // --- 4. DRAG AND DROP & POSITION SAVING LOGIC ---
 let isDragging = false;
@@ -214,21 +242,25 @@ function savePosition(top, left) {
 function loadPosition() {
     chrome.storage.local.get('buttonPosition', (data) => {
         if (data.buttonPosition) {
-            button.style.top = data.buttonPosition.top;
-            button.style.left = data.buttonPosition.left;
+            container.style.top = data.buttonPosition.top;
+            container.style.left = data.buttonPosition.left;
         } else {
-            button.style.top = '100px';
-            button.style.left = '20px';
+            container.style.top = '100px';
+            container.style.left = '20px';
         }
     });
 }
 
-button.addEventListener('mousedown', (e) => {
+container.addEventListener('mousedown', (e) => {
+    // Only drag if the mousedown is on the button, not the checkbox/label
+    if (e.target.closest('.auto-download-label')) {
+        return;
+    }
     e.preventDefault();
     isDragging = true;
     hasDragged = false;
-    offsetX = e.clientX - button.getBoundingClientRect().left;
-    offsetY = e.clientY - button.getBoundingClientRect().top;
+    offsetX = e.clientX - container.getBoundingClientRect().left;
+    offsetY = e.clientY - container.getBoundingClientRect().top;
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 });
@@ -242,16 +274,16 @@ function onMouseMove(e) {
     
     const vpWidth = document.documentElement.clientWidth;
     const vpHeight = document.documentElement.clientHeight;
-    const btnWidth = button.offsetWidth;
-    const btnHeight = button.offsetHeight;
+    const btnWidth = container.offsetWidth;
+    const btnHeight = container.offsetHeight;
 
     if (newLeft < 0) newLeft = 0;
     if (newTop < 0) newTop = 0;
     if (newLeft + btnWidth > vpWidth) newLeft = vpWidth - btnWidth;
     if (newTop + btnHeight > vpHeight) newTop = vpHeight - btnHeight;
 
-    button.style.top = `${newTop}px`;
-    button.style.left = `${newLeft}px`;
+    container.style.top = `${newTop}px`;
+    container.style.left = `${newLeft}px`;
 }
 
 function onMouseUp() {
@@ -261,36 +293,56 @@ function onMouseUp() {
     document.removeEventListener('mouseup', onMouseUp);
     
     if (hasDragged) {
-        savePosition(button.style.top, button.style.left);
+        savePosition(container.style.top, container.style.left);
     }
 }
 
-loadPosition();
+// --- 5. INITIALIZATION ---
+checkbox.addEventListener('change', () => {
+    isAutoDownloadEnabled = checkbox.checked;
+    chrome.storage.local.set({ autoDownloadEnabled: isAutoDownloadEnabled });
+    if (isAutoDownloadEnabled) {
+        console.log("Auto-download enabled by user.");
+        startAutoDownloadMonitoring();
+    } else {
+        console.log("Auto-download disabled by user.");
+        stopAutoDownloadMonitoring();
+    }
+});
 
-// --- 5. START AUTO-DOWNLOAD MONITORING ---
-// Start monitoring when the script loads
-startAutoDownloadMonitoring();
+function initialize() {
+    loadPosition();
 
-// Also start monitoring when new content is added to the page
-const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        if (mutation.addedNodes.length > 0) {
-            // Check if new turns were added
-            const newTurns = Array.from(mutation.addedNodes).some(node => 
-                node.nodeType === Node.ELEMENT_NODE && 
-                (node.id && node.id.startsWith('turn-') || 
-                 node.querySelector && node.querySelector('[id^="turn-"]'))
-            );
-            
-            if (newTurns && !isMonitoring) {
-                console.log("New turns detected, restarting monitoring...");
-                startAutoDownloadMonitoring();
-            }
+    chrome.storage.local.get('autoDownloadEnabled', (data) => {
+        isAutoDownloadEnabled = !!data.autoDownloadEnabled;
+        checkbox.checked = isAutoDownloadEnabled;
+        if (isAutoDownloadEnabled) {
+            console.log("Auto-download is enabled from saved state.");
+            startAutoDownloadMonitoring();
         }
     });
-});
 
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length > 0) {
+                const newTurns = Array.from(mutation.addedNodes).some(node => 
+                    node.nodeType === Node.ELEMENT_NODE && 
+                    (node.id && node.id.startsWith('turn-') || 
+                     node.querySelector && node.querySelector('[id^="turn-"]'))
+                );
+                
+                if (newTurns && !isMonitoring) {
+                    console.log("New turns detected, restarting monitoring...");
+                    startAutoDownloadMonitoring();
+                }
+            }
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+initialize();

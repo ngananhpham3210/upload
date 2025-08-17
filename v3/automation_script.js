@@ -61,7 +61,7 @@ async function executeSequence(promptText) {
         console.log("Textarea found, proceeding with automation.");
 
         // Set "Temperature" slider value
-        setSliderValue('ms-slider input[type="range"], ms-slider input', 1.2);
+        setSliderValue('ms-slider input[type="range"], ms-slider input', 1.3);
         await wait(300);
 
         // Expand "Safety settings" if not already expanded
