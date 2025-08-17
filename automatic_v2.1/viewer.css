@@ -1,0 +1,214 @@
+/* --- ROOT VARIABLES & GLOBAL STYLES --- */
+:root {
+    --primary-color: #6366f1; /* New Indigo for accents */
+    --primary-color-dark: #4f46e5;
+    --green-action: #10b981;
+    --green-action-dark: #059669;
+    --orange-action: #f59e0b;
+    --orange-action-dark: #d97706;
+    
+    --text-color: #1f2937;
+    --text-color-light: #6b7280;
+    --bg-color: #f9fafb; /* Slightly off-white background */
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+
+    /* Card Specific Variables */
+    --card-dark-bg: #1f2937; /* Charcoal */
+    --card-text-light: #d1d5db; /* Light Gray */
+    --card-text-dim: #9ca3af;   /* Dimmer Gray */
+    
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    padding: 2.5rem 1.5rem;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(45deg, var(--primary-color), #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+h2 {
+    font-size: 1.75rem;
+    color: var(--text-color);
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background: var(--border-color);
+    margin: 3rem 0;
+}
+
+/* --- SETTINGS PANEL (Unchanged) --- */
+.settings-panel {
+    max-width: 800px;
+    margin: 0 auto 30px auto;
+    background: var(--card-bg);
+    padding: 2.5rem;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+.setting-item { margin-bottom: 1.5rem; }
+.setting-item label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-color); }
+.setting-item input, .setting-item textarea { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-sizing: border-box; font-size: 1rem; transition: border-color 0.2s, box-shadow 0.2s; }
+.setting-item input:focus, .setting-item textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+.setting-item textarea { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+#generate-button { background-color: #22c55e; color: white; width: 100%; padding: 0.85rem; font-size: 1.1rem; font-weight: bold; border: none; border-radius: var(--border-radius-md); cursor: pointer; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm); }
+#generate-button:hover { background-color: #16a34a; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+
+/* --- PROMPT CONTROLS (Unchanged) --- */
+.prompt-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.prompt-controls h2 { margin: 0; text-align: left; }
+#automate-all-button { background-color: var(--orange-action); color: white; border: none; padding: 0.75rem 1.25rem; border-radius: var(--border-radius-md); cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.2s ease-in-out; box-shadow: var(--shadow-sm); }
+#automate-all-button:hover:not(:disabled) { background-color: var(--orange-action-dark); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+#automate-all-button:disabled { background-color: #a0aec0; cursor: not-allowed; opacity: 0.8; }
+
+
+/* --- GRID LAYOUT (Unchanged) --- */
+#prompt-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.75rem; }
+#prompt-list .placeholder { grid-column: 1 / -1; color: var(--text-color-light); text-align: center; font-style: italic; padding: 2rem; background: #fff; border: 2px dashed var(--border-color); border-radius: var(--border-radius-lg); }
+
+
+/* 
+ ============================================
+  --- NEW & IMPROVED PROMPT CARD STYLING ---
+ ============================================
+*/
+.prompt-item {
+    background: var(--card-dark-bg);
+    border-radius: var(--border-radius-lg);
+    aspect-ratio: 1 / 1;
+    display: flex;
+    position: relative;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    /* A subtle glow effect using a colored shadow */
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), var(--shadow-md);
+}
+
+.prompt-item:hover {
+    transform: translateY(-5px) scale(1.02);
+    /* On hover, the border lights up and the glow intensifies */
+    border-color: var(--primary-color);
+    box-shadow: 0 0 20px -5px var(--primary-color), var(--shadow-lg);
+}
+
+.card-content-wrapper {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* To contain pseudo-elements */
+}
+
+.card-content-wrapper h3 {
+    margin: 0 0 0.75rem 0;
+    color: var(--card-text-light); /* Light text on dark bg */
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+}
+
+.prompt-item:hover h3 {
+    color: #fff;
+}
+
+.prompt-preview {
+    flex-grow: 1;
+    overflow: hidden;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--card-text-dim); /* Dimmer text for the body */
+    white-space: pre-wrap;
+    word-break: break-word;
+    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+}
+
+.prompt-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    z-index: 10; /* Ensure button is on top of any effects */
+}
+
+/* "Ghost" button style for the new cards */
+.prompt-footer button {
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    padding: 0.6rem 1rem;
+    width: 100%;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.prompt-footer button:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* --- PROCESSED CARD STATE --- */
+.prompt-item.processed {
+    /* Processed items get a green accent glow */
+    border-color: var(--green-action);
+    box-shadow: 0 0 20px -5px var(--green-action);
+}
+
+.prompt-item.processed:hover {
+    /* Maintain the green glow on hover, prevent it from turning indigo */
+    transform: translateY(-5px) scale(1.02); /* keep the same hover transform */
+    box-shadow: 0 0 20px -5px var(--green-action), var(--shadow-lg);
+}
+
+.prompt-item.processed h3 {
+    color: var(--green-action);
+}
+
+.prompt-item.processed .prompt-footer button {
+    background-color: var(--green-action);
+    border-color: var(--green-action);
+    color: white;
+    cursor: not-allowed;
+}
+
+/* The checkmark is now more subtle and blends with the dark theme */
+.prompt-item.processed::after {
+    content: '✔';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 120px;
+    font-weight: bold;
+    color: var(--green-action);
+    opacity: 0.15;
+    z-index: 0;
+}
