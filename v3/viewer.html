@@ -26,7 +26,7 @@
             </div>
             <div class="setting-item">
                 <label for="lines-per-prompt">2. Number of lines per prompt:</label>
-                <input type="number" id="lines-per-prompt" value="1" min="1">
+                <input type="number" id="lines-per-prompt" value="600" min="1">
             </div>
             <div class="setting-item">
                 <label for="wrapper-template">3. Wrapper template (use <code>{{content}}</code> as placeholder):</label>
@@ -34,7 +34,7 @@
             </div>
             <div class="setting-item">
                 <label for="filename-suffix">4. Optional Filename Suffix:</label>
-                <input type="text" id="filename-suffix" placeholder="e.g., MyExperiment_v1">
+                <input type="text" id="filename-suffix" placeholder="e.g., MyExperiment_v1" value="japanese">
             </div>
             <button id="generate-button">Generate Prompts</button>
         </div>
@@ -43,7 +43,21 @@
 
         <div class="prompt-controls">
              <h2>Generated Prompts</h2>
-             <button id="automate-all-button" disabled>Automate All Prompts</button>
+             <div class="batch-controls">
+                 <div class="range-automation">
+                    <label for="min-prompt" class="sr-only">Minimum Prompt Number</label>
+                    <input type="number" id="min-prompt" placeholder="Min" min="1" value="1" title="Minimum prompt number to automate">
+                    <span>-</span>
+                    <label for="max-prompt" class="sr-only">Maximum Prompt Number</label>
+                    <input type="number" id="max-prompt" placeholder="Max" min="1" value="5" title="Maximum prompt number to automate">
+                    <button id="automate-range-button" disabled>Automate Range</button>
+                 </div>
+                 <div class="sequence-automation">
+                    <input type="number" id="sequence-size" value="5" min="1" title="Number of prompts per sequence click">
+                    <button id="automate-sequence-button" disabled>Sequence</button>
+                 </div>
+                 <button id="automate-all-button" disabled>Automate All</button>
+             </div>
         </div>
 
         <div id="prompt-list">
