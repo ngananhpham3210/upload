@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Studio Automation</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Configure Prompts from File</h1>
+
+        <div class="settings-panel">
+            <div class="setting-item">
+                <label for="file-input">1. Select a .txt file:</label>
+                <input type="file" id="file-input" accept=".txt">
+            </div>
+            <div class="setting-item">
+                <label for="lines-per-prompt">2. Number of lines per prompt:</label>
+                <input type="number" id="lines-per-prompt" value="1" min="1">
+            </div>
+            <div class="setting-item">
+                <label for="wrapper-template">3. Wrapper template (use <code>{{content}}</code> as placeholder):</label>
+                <textarea id="wrapper-template" rows="4"></textarea>
+            </div>
+            <button id="generate-button">Generate Prompts</button>
+        </div>
+
+        <hr>
+
+        <div class="prompt-controls">
+             <h2>Generated Prompts</h2>
+             <button id="automate-all-button" disabled>Automate All Prompts</button>
+        </div>
+
+        <div id="prompt-list">
+            <p class="placeholder">Prompts will appear here after you generate them.</p>
+        </div>
+    </div>
+    <script src="viewer.js"></script>
+</body>
+</html>
