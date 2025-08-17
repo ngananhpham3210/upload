@@ -1,0 +1,48 @@
+#download-last-turn-btn {
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  background-color: #4285F4; /* Google Blue */
+  color: white;
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+#download-last-turn-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+#download-last-turn-btn:active {
+    cursor: grabbing;
+}
+
+/* Tooltip Styling */
+#download-last-turn-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 115%; /* Position above the button */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+
+#download-last-turn-btn:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
