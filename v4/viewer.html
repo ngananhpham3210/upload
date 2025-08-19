@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tool 1 - Japanese Text Extractor</title>
+    <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+    <main class="container">
+        <header>
+            <img src="icons/icon48.png" alt="icon" class="header-icon">
+            <h1>Tool 1: Japanese Text Extractor</h1>
+        </header>
+
+        <p class="description">Select a folder containing JSON files to extract and filter Japanese text. The processing happens entirely in your browser.</p>
+
+        <div class="controls">
+            <label for="folder-input" class="button">Select Folder</label>
+            <input type="file" id="folder-input" webkitdirectory directory multiple style="display: none;">
+            <span id="folder-name">No folder selected</span>
+        </div>
+
+        <div class="options">
+            <input type="checkbox" id="remove-kanji-only" checked>
+            <label for="remove-kanji-only">Remove lines containing only Kanji</label>
+        </div>
+
+        <button id="process-button" disabled>Process Files</button>
+
+        <div class="output">
+            <h2>Log</h2>
+            <pre id="log-output">Awaiting folder selection...</pre>
+        </div>
+
+        <div id="results" class="results-container" style="display: none;">
+            <h2>Results</h2>
+            <a id="download-link" href="#" download="extracted_japanese_text.txt" class="button">Download Results (.txt)</a>
+            <textarea id="result-preview" readonly placeholder="A preview of the first 100 lines will appear here..."></textarea>
+        </div>
+    </main>
+
+    <script src="viewer.js"></script>
+</body>
+</html>

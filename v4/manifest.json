@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Japanese Text Extractor",
+  "version": "1.0",
+  "description": "Extracts Japanese text from JSON files in a selected local folder.",
+  "permissions": [],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Open Japanese Text Extractor"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
