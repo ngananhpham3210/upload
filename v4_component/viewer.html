@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Text Cleaner Tool</title>
+    <!-- Updated CSS filename -->
+    <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+    <div class="main-container">
+        <header>
+            <h1>Japanese Text Cleaner</h1>
+            <p>Paste your raw text below, select your options, and process it.</p>
+        </header>
+
+        <div class="content-wrapper">
+            <div class="panel input-panel">
+                <label for="inputText">Input Text</label>
+                <textarea id="inputText" rows="15" placeholder="ここにテキストを貼り付けてください..."></textarea>
+            </div>
+            
+            <div class="panel output-panel">
+                <div class="output-header">
+                    <label for="outputText">Output</label>
+                    <div class="output-actions">
+                        <button id="copyButton" title="Copy to clipboard">Copy</button>
+                        <button id="downloadButton" title="Download as .txt file">Download</button>
+                    </div>
+                </div>
+                <textarea id="outputText" rows="15" readonly placeholder="Result will appear here..."></textarea>
+            </div>
+        </div>
+
+        <div class="controls-footer">
+             <div class="control-group">
+                <label for="sortMode">Sort Mode:</label>
+                <select id="sortMode">
+                    <option value="random" selected>Random (Shuffle)</option>
+                    <option value="length_asc">Length (Shortest First)</option>
+                    <option value="length_desc">Length (Longest First)</option>
+                    <option value="alphabetical_asc">Alphabetical (A-Z)</option>
+                    <option value="alphabetical_desc">Alphabetical (Z-A)</option>
+                    <option value="none">No Sorting</option>
+                </select>
+            </div>
+            <button id="processButton">Process Text</button>
+        </div>
+
+        <div class="log-section">
+            <h3>Processing Log</h3>
+            <div id="logArea"></div>
+        </div>
+
+    </div>
+    <!-- Updated JS filename -->
+    <script src="viewer.js"></script>
+</body>
+</html>

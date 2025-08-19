@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Japanese Text Cleaner Tool",
+  "version": "1.0",
+  "description": "Cleans, filters, and sorts Japanese text in a dedicated tool page.",
+  "permissions": [
+    "clipboardWrite"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Japanese Text Cleaner",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
