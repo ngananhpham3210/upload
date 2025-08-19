@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sequenceSizeInput = document.getElementById('sequence-size');
 
     let fileContent = '';
-    const defaultWrapper = 'Insert pipeline between Japanese component words\n\n{{content}}';
+    const defaultWrapper = 'Breakdown each compound phrase into constituent parts\n\n\n{{"したてのメダカにはどのよう": [し, たて, の, メダカ, に, は, どの, よう],\n\n{{content}}';
     wrapperTemplateInput.value = defaultWrapper;
 
     fileInput.addEventListener('change', (event) => {
@@ -68,54 +68,63 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     generateButton.addEventListener('click', () => {
-        if (!fileContent) {
-            alert('Please select a text file first.');
-            return;
-        }
+            if (!fileContent) {
+                alert('Please select a text file first.');
+                return;
+            }
 
-        const lines = fileContent.split('\n').filter(line => line.trim() !== '');
-        const chunkSize = parseInt(linesPerPromptInput.value, 10);
-        const wrapperTemplate = wrapperTemplateInput.value;
-        
-        if (chunkSize <= 0) {
-            alert('Number of lines per prompt must be at least 1.');
-            return;
-        }
-
-        promptList.innerHTML = '';
-        let promptsGenerated = 0;
-
-        for (let i = 0; i < lines.length; i += chunkSize) {
-            promptsGenerated++;
-            const chunk = lines.slice(i, i + chunkSize);
-            const content = chunk.join('\n');
-            const finalPrompt = wrapperTemplate.replace('{{content}}', content);
+            const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+            const chunkSize = parseInt(linesPerPromptInput.value, 10);
+            const wrapperTemplate = wrapperTemplateInput.value;
             
-            const item = document.createElement('div');
-            item.className = 'prompt-item';
-            const displayPreview = finalPrompt.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            
-            item.innerHTML = `
-                <div class="card-content-wrapper">
-                    <h3>Prompt ${promptsGenerated}</h3>
-                    <div class="prompt-preview">${displayPreview}</div>
-                    <div class="prompt-footer">
-                         <button data-prompt="${finalPrompt}">Automate This</button>
+            if (chunkSize <= 0) {
+                alert('Number of lines per prompt must be at least 1.');
+                return;
+            }
+
+            promptList.innerHTML = '';
+            let promptsGenerated = 0;
+
+            for (let i = 0; i < lines.length; i += chunkSize) {
+                promptsGenerated++;
+                const chunk = lines.slice(i, i + chunkSize);
+                const content = chunk.join('\n');
+                const finalPrompt = wrapperTemplate.replace('{{content}}', content);
+                
+                // --- FIX STARTS HERE ---
+                // 1. Create a version of the prompt safe for display (you already did this)
+                const displayPreview = finalPrompt.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                
+                // 2. Create a version of the prompt safe for an HTML attribute
+                //    We replace all double quotes with the HTML entity &quot;
+                const escapedPromptForAttribute = finalPrompt.replace(/"/g, '&quot;');
+                // --- FIX ENDS HERE ---
+
+                const item = document.createElement('div');
+                item.className = 'prompt-item';
+                
+                // Use the correctly escaped variables in their respective places
+                item.innerHTML = `
+                    <div class="card-content-wrapper">
+                        <h3>Prompt ${promptsGenerated}</h3>
+                        <div class="prompt-preview">${displayPreview}</div>
+                        <div class="prompt-footer">
+                             <button data-prompt="${escapedPromptForAttribute}">Automate This</button>
+                        </div>
                     </div>
-                </div>
-            `;
-            promptList.appendChild(item);
-        }
+                `;
+                promptList.appendChild(item);
+            }
 
-        const hasPrompts = promptsGenerated > 0;
-        automateAllButton.disabled = !hasPrompts;
-        automateRangeButton.disabled = !hasPrompts;
-        automateSequenceButton.disabled = !hasPrompts;
+            const hasPrompts = promptsGenerated > 0;
+            automateAllButton.disabled = !hasPrompts;
+            automateRangeButton.disabled = !hasPrompts;
+            automateSequenceButton.disabled = !hasPrompts;
 
-        if (!hasPrompts) {
-            promptList.innerHTML = '<p class="placeholder">No prompts were generated. Check your file and settings.</p>';
-        }
-    });
+            if (!hasPrompts) {
+                promptList.innerHTML = '<p class="placeholder">No prompts were generated. Check your file and settings.</p>';
+            }
+        });
 
     // --- AUTOMATION LAUNCH LOGIC ---
     function launchAutomationForItems(itemsToProcess) {
