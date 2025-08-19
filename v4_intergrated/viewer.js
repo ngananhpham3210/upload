@@ -59,6 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
         logElement.appendChild(p);
         logElement.scrollTop = logElement.scrollHeight;
     };
+    
+    const readFileAsText = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file, 'UTF-8');
+    });
 
     // --- TAB SWITCHING LOGIC ---
     const tabs = document.querySelectorAll('.tab-link');
@@ -153,12 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const isPureJapaneseText = (text) => text && text.trim() && !JAPANESE_CONFIG.REGEX.NON_JAPANESE_CHAR.test(text);
-        const readFileAsText = (file) => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(reader.error);
-            reader.readAsText(file, 'UTF-8');
-        });
         const extractTextFromJson = (obj, textLines = []) => {
             if (typeof obj === 'string') {
                 obj.split('\n').forEach(line => { if (line.trim()) textLines.push(line.trim()); });
@@ -253,5 +254,291 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         });
+    })();
+    
+    // --- TOOL 3: DUPLICATES REMOVAL ---
+    (() => {
+        const sourceFolderInput = document.getElementById('duplicates-source-folder-input');
+        const sourceFolderName = document.getElementById('duplicates-source-folder-name');
+        const largeFileInput = document.getElementById('duplicates-large-file-input');
+        const largeFileName = document.getElementById('duplicates-large-file-name');
+        const processButton = document.getElementById('duplicates-process-button');
+        const logArea = document.getElementById('duplicates-log-area');
+        const resultsPanel = document.getElementById('duplicates-results-panel');
+        const downloadLink = document.getElementById('duplicates-download-link');
+        const resultPreview = document.getElementById('duplicates-result-preview');
+        const logger = (message) => log(message, logArea);
+        let sourceFiles = [];
+        let largeFile = null;
+
+        const checkInputs = () => {
+            processButton.disabled = !(sourceFiles.length > 0 && largeFile);
+        };
+        const processLine = (line) => {
+            let processed = line.trim();
+            if (processed.includes('->')) {
+                const parts = processed.split('->');
+                processed = parts[parts.length - 1].trim();
+            }
+            processed = processed.replace(/\s*\|\s*/g, '');
+            return processed;
+        };
+        sourceFolderInput.addEventListener('change', (event) => {
+            sourceFiles = Array.from(event.target.files).filter(f => f.name.endsWith('.txt'));
+            if (sourceFiles.length > 0) {
+                sourceFolderName.textContent = `${sourceFiles.length} .txt files selected`;
+            } else {
+                sourceFolderName.textContent = 'No .txt files found in folder';
+            }
+            checkInputs();
+        });
+        largeFileInput.addEventListener('change', (event) => {
+            if (event.target.files.length > 0) {
+                largeFile = event.target.files[0];
+                largeFileName.textContent = largeFile.name;
+            } else {
+                largeFile = null;
+                largeFileName.textContent = 'No file selected';
+            }
+            checkInputs();
+        });
+        processButton.addEventListener('click', async () => {
+            processButton.disabled = true;
+            processButton.textContent = 'Processing...';
+            logArea.innerHTML = '';
+            resultsPanel.style.display = 'none';
+            logger('--- Stage 1: Building removal set from source files ---');
+            const removalSet = new Set();
+            try {
+                for (const file of sourceFiles) {
+                    logger(`Reading source file: ${file.name}`);
+                    const content = await readFileAsText(file);
+                    const lines = content.split('\n');
+                    for (const line of lines) {
+                        const processed = processLine(line);
+                        if (processed) {
+                            removalSet.add(processed);
+                        }
+                    }
+                }
+                logger(`Found ${removalSet.size} unique lines to use for de-duplication.\n`);
+            } catch (error) {
+                logger(`ERROR reading source files: ${error.message}`);
+                processButton.disabled = false;
+                processButton.textContent = 'Process and Clean';
+                return;
+            }
+            logger(`--- Stage 2: Cleaning '${largeFile.name}' ---`);
+            let linesRead = 0;
+            let linesWritten = 0;
+            const keptLines = [];
+            try {
+                const largeFileContent = await readFileAsText(largeFile);
+                const originalLines = largeFileContent.split('\n');
+                linesRead = originalLines.length;
+                for (const originalLine of originalLines) {
+                    const processed = processLine(originalLine);
+                    if (!removalSet.has(processed)) {
+                        keptLines.push(originalLine);
+                        linesWritten++;
+                    }
+                }
+            } catch (error) {
+                logger(`ERROR processing large file: ${error.message}`);
+                processButton.disabled = false;
+                processButton.textContent = 'Process and Clean';
+                return;
+            }
+            const resultText = keptLines.join('\n');
+            const blob = new Blob([resultText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            downloadLink.href = url;
+            downloadLink.download = `${largeFile.name.replace('.txt', '')}_cleaned.txt`;
+            resultPreview.value = keptLines.slice(0, 200).join('\n');
+            if (keptLines.length > 200) {
+                resultPreview.value += `\n\n... and ${keptLines.length - 200} more lines.`;
+            }
+            resultsPanel.style.display = 'block';
+            const linesRemoved = linesRead - linesWritten;
+            logger('\n--- Summary ---');
+            logger(`Processing complete.`);
+            logger(`Total lines read from '${largeFile.name}': ${linesRead}`);
+            logger(`Lines written to output: ${linesWritten}`);
+            logger(`Lines removed: ${linesRemoved}`);
+            processButton.disabled = false;
+            processButton.textContent = 'Process and Clean';
+        });
+
+    })();
+    
+    // --- TOOL 4: JSON PROCESSOR (NEW LOGIC) ---
+    (() => {
+        // --- DOM Elements ---
+        const folderInput = document.getElementById('processor-folder-input');
+        const folderName = document.getElementById('processor-folder-name');
+        const processButton = document.getElementById('processor-process-button');
+        const logArea = document.getElementById('processor-log-area');
+        const resultsPanel = document.getElementById('processor-results-panel');
+        const downloadLinks = {
+            same: document.getElementById('processor-download-same'),
+            different: document.getElementById('processor-download-different'),
+            keys: document.getElementById('processor-download-keys'),
+            values: document.getElementById('processor-download-values'),
+            modified: document.getElementById('processor-download-modified'),
+        };
+        const logger = (message) => log(message, logArea);
+
+        // --- State ---
+        let selectedFiles = [];
+
+        // --- Event Listeners ---
+        folderInput.addEventListener('change', (event) => {
+            selectedFiles = Array.from(event.target.files).filter(f => f.name.endsWith('.txt'));
+            if (selectedFiles.length > 0) {
+                folderName.textContent = `${selectedFiles.length} .txt files selected`;
+                processButton.disabled = false;
+            } else {
+                folderName.textContent = 'No .txt files found in folder';
+                processButton.disabled = true;
+            }
+        });
+        
+        processButton.addEventListener('click', async () => {
+            processButton.disabled = true;
+            processButton.textContent = 'Processing...';
+            logArea.innerHTML = '';
+            resultsPanel.style.display = 'none';
+
+            // --- Stage 1: Extract JSON from all files ---
+            logger('--- Stage 1: Extracting JSON from source files ---');
+            let allExtractedJson = [];
+            let filesWithoutJson = [];
+            for(const file of selectedFiles) {
+                logger(`> Processing file: ${file.name}`);
+                try {
+                    const content = await readFileAsText(file);
+                    const extracted = findAndExtractJson(content);
+                    if (extracted.length > 0) {
+                        allExtractedJson.push(...extracted);
+                        logger(`  ✅ Extracted ${extracted.length} JSON object(s).`);
+                    } else {
+                        filesWithoutJson.push(file.name);
+                        logger(`  - No valid JSON objects found.`);
+                    }
+                } catch (error) {
+                    logger(`  ❌ ERROR processing ${file.name}: ${error.message}`);
+                }
+            }
+            logger('\n--- Stage 1 Summary ---');
+            logger(`Processed ${selectedFiles.length} files.`);
+            logger(`Extracted a total of ${allExtractedJson.length} JSON objects.`);
+            if (filesWithoutJson.length > 0) {
+                logger(`Files without JSON (${filesWithoutJson.length}): ${filesWithoutJson.join(', ')}`);
+            }
+            
+            // --- Stage 2: Process extracted JSON ---
+            logger('\n--- Stage 2: Comparing keys and values ---');
+            const samePairs = new Map();
+            const differentPairs = new Map();
+
+            for (const jsonObj of allExtractedJson) {
+                if (typeof jsonObj !== 'object' || jsonObj === null || Array.isArray(jsonObj)) continue;
+                
+                for(const [key, value] of Object.entries(jsonObj)) {
+                    const combinedValueStr = combineValueToString(value);
+                    const outputLine = `"${key}": ${JSON.stringify(value)}`;
+                    
+                    if (key === combinedValueStr || key.replace(/\s+/g, '') === combinedValueStr) {
+                        if (!samePairs.has(outputLine)) samePairs.set(outputLine, { key, value });
+                    } else {
+                        if (!differentPairs.has(outputLine)) differentPairs.set(outputLine, { key, value });
+                    }
+                }
+            }
+            logger(`Found ${samePairs.size} unique 'same' key-value pairs.`);
+            logger(`Found ${differentPairs.size} unique 'different' key-value pairs.`);
+
+            // --- Stage 3: Split 'same' file results ---
+            logger(`\n--- Stage 3: Splitting 'same' pairs ---`);
+            const keysOutput = [];
+            const valuesOutput = [];
+            const modifiedValuesOutput = [];
+
+            for (const { key, value } of samePairs.values()) {
+                keysOutput.push(key);
+                valuesOutput.push(JSON.stringify(value));
+                if (Array.isArray(value)) {
+                    value.forEach(item => modifiedValuesOutput.push(String(item)));
+                } else {
+                    modifiedValuesOutput.push(String(value));
+                }
+            }
+            logger(`Generated ${keysOutput.length} keys.`);
+            logger(`Generated ${valuesOutput.length} value entries.`);
+            logger(`Generated ${modifiedValuesOutput.length} modified value lines.`);
+            
+            // --- Final Step: Create download links ---
+            createDownload('same.txt', [...samePairs.keys()].sort(), downloadLinks.same);
+            createDownload('different.txt', [...differentPairs.keys()].sort(), downloadLinks.different);
+            createDownload('keys', keysOutput, downloadLinks.keys);
+            createDownload('values', valuesOutput, downloadLinks.values);
+            createDownload('value_modified.txt', modifiedValuesOutput, downloadLinks.modified);
+            
+            resultsPanel.style.display = 'block';
+            processButton.disabled = false;
+            processButton.textContent = 'Extract & Process JSON';
+            logger('\n--- Processing Complete! ---');
+        });
+        
+        // --- Helper Functions for this tool ---
+        const findAndExtractJson = (content) => {
+            const results = [];
+            let searchPos = 0;
+            while (true) {
+                const start = content.indexOf('{', searchPos);
+                if (start === -1) break;
+
+                let braceLevel = 1;
+                let end = -1;
+                for (let i = start + 1; i < content.length; i++) {
+                    if (content[i] === '{') braceLevel++;
+                    else if (content[i] === '}') braceLevel--;
+                    if (braceLevel === 0) {
+                        end = i + 1;
+                        break;
+                    }
+                }
+
+                if (end !== -1) {
+                    const potentialJson = content.substring(start, end);
+                    try {
+                        results.push(JSON.parse(potentialJson));
+                        searchPos = end;
+                    } catch (e) {
+                        searchPos = start + 1; // Invalid JSON, move one char forward
+                    }
+                } else {
+                    break; // Unmatched brace, stop searching
+                }
+            }
+            return results;
+        };
+
+        const combineValueToString = (value) => {
+            if (typeof value === 'string') return value;
+            if (value === null || typeof value === 'number' || typeof value === 'boolean') return String(value);
+            if (Array.isArray(value)) return value.map(combineValueToString).join('');
+            if (typeof value === 'object') return Object.values(value).map(combineValueToString).join('');
+            return '';
+        };
+
+        const createDownload = (filename, linesArray, linkElement) => {
+            const text = linesArray.join('\n');
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            linkElement.href = url;
+            linkElement.download = filename;
+        };
+
     })();
 });

@@ -23,6 +23,8 @@
         <nav class="tabs">
             <button class="tab-link active" data-tab="extractor">Extract from Folder</button>
             <button class="tab-link" data-tab="cleaner">Clean Pasted Text</button>
+            <button class="tab-link" data-tab="duplicates">Remove Duplicates</button>
+            <button class="tab-link" data-tab="processor">JSON Processor</button> <!-- NEW TAB -->
         </nav>
 
         <!-- Tool 1: Extractor -->
@@ -98,6 +100,81 @@
                 <div id="cleaner-log-area" class="log-area"></div>
             </section>
         </div>
+
+        <!-- Tool 3: Duplicates Removal -->
+        <div id="duplicates-tab" class="tab-content">
+            <section class="panel">
+                <h2>1. Select Removal Keys Folder</h2>
+                <p class="subtitle" style="text-align: left; margin-top: -0.5rem; margin-bottom: 1.5rem;">Select the folder containing small .txt files. Lines from these files will be used to remove matching lines from the large file.</p>
+                <div class="control-group">
+                    <label for="duplicates-source-folder-input" class="btn btn-primary">Select Folder</label>
+                    <input type="file" id="duplicates-source-folder-input" webkitdirectory directory multiple style="display: none;">
+                    <span id="duplicates-source-folder-name" class="file-name-display">No folder selected</span>
+                </div>
+            </section>
+
+             <section class="panel">
+                <h2>2. Select File to Clean</h2>
+                <p class="subtitle" style="text-align: left; margin-top: -0.5rem; margin-bottom: 1.5rem;">Select the single large .txt file you want to clean.</p>
+                <div class="control-group">
+                    <label for="duplicates-large-file-input" class="btn btn-primary">Select File</label>
+                    <input type="file" id="duplicates-large-file-input" accept=".txt" style="display: none;">
+                    <span id="duplicates-large-file-name" class="file-name-display">No file selected</span>
+                </div>
+            </section>
+
+            <section class="panel">
+                 <h2>3. Process Files</h2>
+                <button id="duplicates-process-button" class="btn btn-action" disabled>Process and Clean</button>
+            </section>
+
+            <section class="panel" id="duplicates-results-panel" style="display: none;">
+                <h2>Results</h2>
+                <a id="duplicates-download-link" href="#" download="cleaned_file.txt" class="btn btn-secondary">Download Cleaned File (.txt)</a>
+                <textarea id="duplicates-result-preview" readonly placeholder="A preview of the cleaned file will appear here..."></textarea>
+            </section>
+
+            <section class="panel">
+                <h2>Processing Log</h2>
+                <div id="duplicates-log-area" class="log-area"><p>Awaiting file selections...</p></div>
+            </section>
+        </div>
+        
+        <!-- Tool 4: JSON Processor (NEW CONTENT) -->
+        <div id="processor-tab" class="tab-content">
+             <section class="panel">
+                <h2>1. Select Source Folder</h2>
+                 <p class="subtitle" style="text-align: left; margin-top: -0.5rem; margin-bottom: 1.5rem;">Select a folder containing .txt files with embedded JSON objects.</p>
+                <div class="control-group">
+                    <label for="processor-folder-input" class="btn btn-primary">Select Folder</label>
+                    <input type="file" id="processor-folder-input" webkitdirectory directory multiple style="display: none;">
+                    <span id="processor-folder-name" class="file-name-display">No folder selected</span>
+                </div>
+            </section>
+            
+             <section class="panel">
+                 <h2>2. Run Processor</h2>
+                <button id="processor-process-button" class="btn btn-action" disabled>Extract & Process JSON</button>
+            </section>
+            
+            <section class="panel" id="processor-results-panel" style="display: none;">
+                <h2>Results</h2>
+                <p class="subtitle" style="text-align: left; margin-top: -0.5rem; margin-bottom: 1.5rem;">Processing complete. Download the generated files below.</p>
+                <div class="output-actions" style="flex-wrap: wrap; justify-content: flex-start;">
+                    <a id="processor-download-same" href="#" class="btn btn-secondary">Download same.txt</a>
+                    <a id="processor-download-different" href="#" class="btn btn-secondary">Download different.txt</a>
+                    <a id="processor-download-keys" href="#" class="btn btn-secondary">Download keys</a>
+                    <a id="processor-download-values" href="#" class="btn btn-secondary">Download values</a>
+                    <a id="processor-download-modified" href="#" class="btn btn-secondary">Download value_modified.txt</a>
+                </div>
+            </section>
+            
+            <section class="panel">
+                <h2>Processing Log</h2>
+                <div id="processor-log-area" class="log-area"><p>Awaiting folder selection...</p></div>
+            </section>
+        </div>
+
     </main>
     <script src="viewer.js"></script>
 </body>
