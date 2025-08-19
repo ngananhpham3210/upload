@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Text Tools</title>
+    <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+    <div class="theme-switcher-container">
+        <label class="theme-switcher">
+            <input type="checkbox" id="theme-toggle" class="sr-only">
+            <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+            </div>
+        </label>
+    </div>
+
+    <main class="container">
+        <h1>Japanese Text Tools</h1>
+        <p class="subtitle">Extract text from JSON files or clean, filter, and sort pasted text.</p>
+
+        <nav class="tabs">
+            <button class="tab-link active" data-tab="extractor">Extract from Folder</button>
+            <button class="tab-link" data-tab="cleaner">Clean Pasted Text</button>
+        </nav>
+
+        <!-- Tool 1: Extractor -->
+        <div id="extractor-tab" class="tab-content active">
+            <section class="panel">
+                <h2>1. Select Source Folder</h2>
+                <div class="control-group">
+                    <label for="extractor-folder-input" class="btn btn-primary">Select Folder</label>
+                    <input type="file" id="extractor-folder-input" webkitdirectory directory multiple style="display: none;">
+                    <span id="extractor-folder-name" class="file-name-display">No folder selected</span>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>2. Configure and Process</h2>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="extractor-remove-kanji" checked>
+                    <label for="extractor-remove-kanji">Remove lines containing only Kanji</label>
+                </div>
+                <button id="extractor-process-button" class="btn btn-action" disabled>Process Files</button>
+            </section>
+
+            <section class="panel" id="extractor-results-panel" style="display: none;">
+                <h2>Results</h2>
+                <a id="extractor-download-link" href="#" download="extracted_japanese_text.txt" class="btn btn-secondary">Download Results (.txt)</a>
+                <textarea id="extractor-result-preview" readonly placeholder="A preview of the first 100 lines will appear here..."></textarea>
+            </section>
+            
+            <section class="panel">
+                <h2>Processing Log</h2>
+                <div id="extractor-log-area" class="log-area"><p>Awaiting folder selection...</p></div>
+            </section>
+        </div>
+
+        <!-- Tool 2: Cleaner -->
+        <div id="cleaner-tab" class="tab-content">
+            <div class="content-wrapper">
+                <section class="panel">
+                    <label for="cleaner-inputText">Input Text</label>
+                    <textarea id="cleaner-inputText" rows="12" placeholder="ここにテキストを貼り付けてください..."></textarea>
+                </section>
+                <section class="panel">
+                    <div class="output-header">
+                        <label for="cleaner-outputText">Output</label>
+                        <div class="output-actions">
+                            <button id="cleaner-copy-button" class="btn btn-secondary btn-sm" title="Copy to clipboard">Copy</button>
+                            <button id="cleaner-download-button" class="btn btn-secondary btn-sm" title="Download as .txt file">Download</button>
+                        </div>
+                    </div>
+                    <textarea id="cleaner-outputText" rows="12" readonly placeholder="Result will appear here..."></textarea>
+                </section>
+            </div>
+
+            <section class="panel">
+                <div class="controls-footer">
+                     <div class="control-group">
+                        <label for="cleaner-sort-mode">Sort Mode:</label>
+                        <select id="cleaner-sort-mode">
+                            <option value="random" selected>Random (Shuffle)</option>
+                            <option value="length_asc">Length (Shortest First)</option>
+                            <option value="length_desc">Length (Longest First)</option>
+                            <option value="alphabetical_asc">Alphabetical (A-Z)</option>
+                            <option value="alphabetical_desc">Alphabetical (Z-A)</option>
+                            <option value="none">No Sorting</option>
+                        </select>
+                    </div>
+                    <button id="cleaner-process-button" class="btn btn-action">Process Text</button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h3>Processing Log</h3>
+                <div id="cleaner-log-area" class="log-area"></div>
+            </section>
+        </div>
+    </main>
+    <script src="viewer.js"></script>
+</body>
+</html>
