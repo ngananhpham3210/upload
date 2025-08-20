@@ -1,0 +1,16 @@
+setx PATH "C:\Users\Portable\python;C:\Users\Portable\python\Scripts;C:\Users\Portable\node;C:\Users\Portable\git;C:\Users\Portable\git\bin;%PATH%"
+
+yt-dlp -j --extractor-args "youtube:player_client=tv_simply;player_skip=webpage,js,configs" --extractor-args "youtubepot-bgutilscript:script_path=C:\Users\Portable\bgutil-ytdlp-pot-provider\server\build\generate_once.js" "https://www.youtube.com/watch?v=lr2VaQEHJ-Q"
+
+--extractor-args "youtube:player_client=android;po_token=android.gvs+Ml-6BRFyswS1cro5US-8tJey5TY9r7GlJF7Rb2I0e7OkDpfie_5pSI6b-61iD7dlG1NkNc-7wjNCOubA4pxuTSWT37pbRArzuexTiOYxFXkjzQGOvVa60EDryiqVYboPWw==
+
+yt-dlp -j --extractor-args "youtube:player_client=android;player_skip=webpage,js,configs;po_token=android.gvs+Ml-6BRFyswS1cro5US-8tJey5TY9r7GlJF7Rb2I0e7OkDpfie_5pSI6b-61iD7dlG1NkNc-7wjNCOubA4pxuTSWT37pbRArzuexTiOYxFXkjzQGOvVa60EDryiqVYboPWw==" "https://www.youtube.com/watch?v=lr2VaQEHJ-Q"
+
+
+yt-dlp --format "worstaudio[format_note*=low]" --concurrent-fragments 32 --extractor-args "youtube:player_client=ios,webpage" --retry-sleep fragment:exp=1:5 "https://www.youtube.com/watch?v=2v6o1E3-MXg"
+
+yt-dlp --format 18 --downloader aria2c --downloader-args "aria2c: -s 16" --extractor-args "youtube:player_client=android" "https://www.youtube.com/watch?v=nACPoAdks9U"
+
+yt-dlp --format "worstaudio[format_note*=low]" "https://www.youtube.com/watch?v=5NgNicANyqM"
+
+yt-dlp -j -F --format "worstaudio[format_note*=low]" --concurrent-fragments 32 --extractor-args "youtube:player_client=ios" --retry-sleep fragment:exp=1:5 "https://www.youtube.com/watch?v=2v6o1E3-MXg"
