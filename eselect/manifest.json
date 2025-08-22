@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Live Element Highlighter",
+  "version": "1.0",
+  "description": "Highlights any element the mouse is hovering over with a visible border.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["highlighter.css"]
+    }
+  ]
+}

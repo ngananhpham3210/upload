@@ -1,0 +1,20 @@
+/*
+  This class will be dynamically added and removed from elements
+  by our content.js script.
+*/
+.extension-highlight-element {
+  /* 
+    'outline' is better than 'border' because it doesn't affect the
+    page layout or element dimensions, preventing the page from "jiggling".
+  */
+  outline: 2px solid dodgerblue !important;
+
+  /*
+    'outline-offset' creates a small gap between the element and the
+    highlight, making it easier to see.
+  */
+  outline-offset: 2px !important;
+
+  /* Optional: Add a subtle background color to the highlighted element */
+  background-color: rgba(65, 131, 215, 0.1) !important;
+}

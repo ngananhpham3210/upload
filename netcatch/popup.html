@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>yt-dlp Command Helper</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <h3 class="main-title">yt-dlp Command Helper</h3>
+        
+        <button id="copy-command-btn" disabled>Copy Command</button>
+        <div id="status-message" class="status-box">Loading...</div>
+        
+        <hr class="divider" />
+        
+        <form id="settings-form" class="settings-grid">
+            <!-- Row 1: Labels -->
+            <label for="http-chunk-size">Chunk</label>
+            <label for="limit-rate">Rate</label>
+            <label for="player-client">Client</label>
+            <label for="playback-wait">Wait</label>
+            
+            <!-- Row 2: Inputs -->
+            <input type="number" id="http-chunk-size" name="httpChunkSize" placeholder="8">
+            <input type="number" id="limit-rate" name="limitRate" placeholder="4">
+            
+            <select id="player-client" name="playerClient">
+                <option value="tv">TV</option>
+                <option value="ios">iOS</option>
+                <option value="web">Web</option>
+            </select>
+            
+            <input type="number" id="playback-wait" name="playbackWait" placeholder="2">
+        </form>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
